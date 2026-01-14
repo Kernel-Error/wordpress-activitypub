@@ -7,15 +7,15 @@
 
 namespace Activitypub;
 
+use Activitypub\Activity\Activity;
 use Activitypub\Collection\Actors;
 use Activitypub\Collection\Extra_Fields;
 use Activitypub\Collection\Followers;
 use Activitypub\Collection\Following;
 use Activitypub\Collection\Outbox;
 use Activitypub\Collection\Remote_Actors;
+use Activitypub\Model\Blog;
 use Activitypub\Transformer\Factory;
-
-use function Activitypub\add_to_outbox;
 
 /**
  * ActivityPub Migration Class
@@ -1102,21 +1102,17 @@ class Migration {
 			return;
 		}
 
-		$blog = new Model\Blog();
+		$blog = new Blog();
 
-		// Old ID was the @username format.
-		$old_id = \esc_url( \trailingslashit( \get_home_url() ) . '@' . $blog->get_preferred_username() );
-		// New ID is the query param format.
-		$new_id = \add_query_arg( 'author', Actors::BLOG_USER_ID, \home_url( '/' ) );
-
-		$activity = new Activity\Activity();
+		$activity = new Activity();
 		$activity->set_type( 'Move' );
-		$activity->set_actor( $old_id );
-		$activity->set_origin( $old_id );
-		$activity->set_object( $old_id );
-		$activity->set_target( $new_id );
+		$activity->set_actor( $blog->get_url() );
+		$activity->set_origin( $blog->get_url() );
+		$activity->set_object( $blog->get_url() );
+		$activity->set_target( $blog->get_id() );
+		$activity->set_to( Remote_Actors::get_inboxes() );
 
-		add_to_outbox( $activity, null, Actors::BLOG_USER_ID, ACTIVITYPUB_CONTENT_VISIBILITY_QUIET_PUBLIC );
+		Outbox::add( $activity, Actors::BLOG_USER_ID, ACTIVITYPUB_CONTENT_VISIBILITY_PRIVATE );
 	}
 
 	/**
