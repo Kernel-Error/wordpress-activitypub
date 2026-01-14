@@ -1102,13 +1102,14 @@ class Migration {
 			return;
 		}
 
-		$blog = new Blog();
+		$blog   = new Blog();
+		$old_id = \esc_url( \trailingslashit( get_home_url() ) . '@' . $blog->get_preferred_username() );
 
 		$activity = new Activity();
 		$activity->set_type( 'Move' );
-		$activity->set_actor( $blog->get_url() );
-		$activity->set_origin( $blog->get_url() );
-		$activity->set_object( $blog->get_url() );
+		$activity->set_actor( $old_id );
+		$activity->set_origin( $old_id );
+		$activity->set_object( $old_id );
 		$activity->set_target( $blog->get_id() );
 
 		Outbox::add( $activity, Actors::BLOG_USER_ID, ACTIVITYPUB_CONTENT_VISIBILITY_PRIVATE );
