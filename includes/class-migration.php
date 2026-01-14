@@ -1114,7 +1114,7 @@ class Migration {
 		$activity->set_object( $old_id );
 		$activity->set_target( $blog->get_id() );
 
-		Outbox::add( $activity, Actors::BLOG_USER_ID, ACTIVITYPUB_CONTENT_VISIBILITY_PRIVATE );
+		add_to_outbox( $activity, null, Actors::BLOG_USER_ID, ACTIVITYPUB_CONTENT_VISIBILITY_PRIVATE );
 	}
 
 	/**
@@ -1147,7 +1147,7 @@ class Migration {
 			$activity->set_object( $old_id );
 			$activity->set_target( $user->get_id() );
 
-			Outbox::add( $activity, $wp_user->ID, ACTIVITYPUB_CONTENT_VISIBILITY_PRIVATE );
+			add_to_outbox( $activity, null, $wp_user->ID, ACTIVITYPUB_CONTENT_VISIBILITY_PRIVATE );
 		}
 	}
 
