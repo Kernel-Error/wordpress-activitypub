@@ -1110,7 +1110,6 @@ class Migration {
 		$activity->set_origin( $blog->get_url() );
 		$activity->set_object( $blog->get_url() );
 		$activity->set_target( $blog->get_id() );
-		$activity->set_to( Remote_Actors::get_inboxes() );
 
 		Outbox::add( $activity, Actors::BLOG_USER_ID, ACTIVITYPUB_CONTENT_VISIBILITY_PRIVATE );
 	}
