@@ -116,12 +116,6 @@ class User extends Actor {
 			return $id;
 		}
 
-		$permalink = \get_user_option( 'activitypub_use_permalink_as_id', $this->_id );
-
-		if ( '1' === $permalink ) {
-			return $this->get_url();
-		}
-
 		return \add_query_arg( 'author', $this->_id, \home_url( '/' ) );
 	}
 
@@ -460,11 +454,31 @@ class User extends Actor {
 	/**
 	 * Returns the movedTo.
 	 *
-	 * @return string The movedTo.
+	 * @return string|null The movedTo URL or null.
 	 */
 	public function get_moved_to() {
 		$moved_to = \get_user_option( 'activitypub_moved_to', $this->_id );
 
-		return $moved_to && $moved_to !== $this->get_id() ? $moved_to : null;
+		if ( $moved_to && $moved_to !== $this->get_id() ) {
+			return $moved_to;
+		}
+
+		// If this user had the old permalink-as-id setting and is being accessed
+		// via the old permalink URL (no author in query string), return the new ID.
+		$use_permalink = \get_user_option( 'activitypub_use_permalink_as_id', $this->_id );
+
+		if ( '1' === $use_permalink ) {
+			$request_uri  = isset( $_SERVER['REQUEST_URI'] ) ? \esc_url_raw( \wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+			$query_string = \wp_parse_url( $request_uri, \PHP_URL_QUERY );
+			$query_params = array();
+
+			\wp_parse_str( $query_string ?? '', $query_params );
+
+			if ( ! isset( $query_params['author'] ) ) {
+				return $this->get_id();
+			}
+		}
+
+		return null;
 	}
 }

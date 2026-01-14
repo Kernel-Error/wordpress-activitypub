@@ -215,6 +215,10 @@ class Migration {
 			\wp_schedule_single_event( \time(), 'activitypub_migrate_avatar_to_remote_actors' );
 		}
 
+		if ( \version_compare( $version_from_db, 'unreleased', '<' ) ) {
+			self::migrate_blog_user_to_query_param_id();
+		}
+
 		// Ensure all required cron schedules are registered.
 		Scheduler::register_schedules();
 
@@ -1081,6 +1085,36 @@ class Migration {
 		foreach ( $inbox_ids as $post_id ) {
 			\wp_delete_post( $post_id, true );
 		}
+	}
+
+	/**
+	 * Migrate blog user from permalink-based ID to query param ID.
+	 *
+	 * This sends a Move activity from the old @username URL to the new ?author= URL
+	 * for the blog actor, allowing followers to update their records.
+	 */
+	private static function migrate_blog_user_to_query_param_id() {
+		$use_permalink = \get_option( 'activitypub_use_permalink_as_id_for_blog', false );
+
+		if ( ! $use_permalink ) {
+			return;
+		}
+
+		$blog = new Model\Blog();
+
+		// Old ID was the @username format.
+		$old_id = \esc_url( \trailingslashit( \get_home_url() ) . '@' . $blog->get_preferred_username() );
+		// New ID is the query param format.
+		$new_id = \add_query_arg( 'author', Actors::BLOG_USER_ID, \home_url( '/' ) );
+
+		$activity = new Activity\Activity();
+		$activity->set_type( 'Move' );
+		$activity->set_actor( $old_id );
+		$activity->set_origin( $old_id );
+		$activity->set_object( $old_id );
+		$activity->set_target( $new_id );
+
+		add_to_outbox( $activity, null, Actors::BLOG_USER_ID, ACTIVITYPUB_CONTENT_VISIBILITY_QUIET_PUBLIC );
 	}
 
 	/**
