@@ -15,6 +15,7 @@ use Activitypub\Collection\Following;
 use Activitypub\Collection\Outbox;
 use Activitypub\Collection\Remote_Actors;
 use Activitypub\Model\Blog;
+use Activitypub\Model\User;
 use Activitypub\Transformer\Factory;
 
 /**
@@ -219,6 +220,7 @@ class Migration {
 
 		if ( \version_compare( $version_from_db, 'unreleased', '<' ) ) {
 			self::migrate_blog_user_to_query_param_id();
+			self::migrate_users_to_query_param_id();
 		}
 
 		// Ensure all required cron schedules are registered.
@@ -1113,6 +1115,40 @@ class Migration {
 		$activity->set_target( $blog->get_id() );
 
 		Outbox::add( $activity, Actors::BLOG_USER_ID, ACTIVITYPUB_CONTENT_VISIBILITY_PRIVATE );
+	}
+
+	/**
+	 * Migrate users from permalink-based ID to query param ID.
+	 *
+	 * This sends a Move activity from the old author URL to the new ?author= URL
+	 * for each user that had the permalink-as-id setting.
+	 */
+	private static function migrate_users_to_query_param_id() {
+		$users = \get_users(
+			array(
+				'capability__in' => array( 'activitypub' ),
+			)
+		);
+
+		foreach ( $users as $wp_user ) {
+			$use_permalink = \get_user_option( 'activitypub_use_permalink_as_id', $wp_user->ID );
+
+			if ( '1' !== $use_permalink ) {
+				continue;
+			}
+
+			$user   = new User( $wp_user->ID );
+			$old_id = $user->get_url();
+
+			$activity = new Activity();
+			$activity->set_type( 'Move' );
+			$activity->set_actor( $old_id );
+			$activity->set_origin( $old_id );
+			$activity->set_object( $old_id );
+			$activity->set_target( $user->get_id() );
+
+			Outbox::add( $activity, $wp_user->ID, ACTIVITYPUB_CONTENT_VISIBILITY_PRIVATE );
+		}
 	}
 
 	/**
