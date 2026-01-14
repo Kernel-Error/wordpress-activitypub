@@ -15,6 +15,8 @@ use Activitypub\Collection\Outbox;
 use Activitypub\Collection\Remote_Actors;
 use Activitypub\Transformer\Factory;
 
+use function Activitypub\add_to_outbox;
+
 /**
  * ActivityPub Migration Class
  *
