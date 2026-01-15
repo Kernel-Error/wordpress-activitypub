@@ -11,6 +11,7 @@ use Activitypub\Activity\Actor;
 use Activitypub\Collection\Actors;
 use Activitypub\Collection\Extra_Fields;
 
+use function Activitypub\encode_url_path;
 use function Activitypub\esc_hashtag;
 use function Activitypub\get_attribution_domains;
 use function Activitypub\get_rest_url_by_path;
