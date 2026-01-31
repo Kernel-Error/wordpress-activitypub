@@ -112,9 +112,24 @@ class Actions_Controller extends \WP_REST_Controller {
 	/**
 	 * Check if the current user has permission to perform actions.
 	 *
+	 * This endpoint is restricted to same-origin admin requests only.
+	 * External services (using Application Passwords, OAuth, etc.) cannot access it.
+	 *
+	 * @param \WP_REST_Request $request Full data about the request.
 	 * @return bool|\WP_Error True if the request has permission, WP_Error object otherwise.
 	 */
-	public function check_permission() {
+	public function check_permission( $request ) {
+		// Verify REST nonce to ensure request comes from WordPress admin UI.
+		// External API clients won't have access to this nonce.
+		$nonce = $request->get_header( 'X-WP-Nonce' );
+		if ( ! $nonce || ! \wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+			return new \WP_Error(
+				'rest_forbidden',
+				\__( 'This endpoint is only accessible from the WordPress admin interface.', 'activitypub' ),
+				array( 'status' => 403 )
+			);
+		}
+
 		if ( ! user_can_activitypub( \get_current_user_id() ) ) {
 			return new \WP_Error(
 				'rest_forbidden',
